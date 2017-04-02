@@ -1,6 +1,8 @@
 defmodule Commissionsbot.TelegramController do
   use Commissionsbot.Web, :controller
 
+  alias Commissionsbot.TelegramUpdate
+
   def index(conn, %{"update_id" => update_id}=params) do
     require Logger
 
@@ -19,7 +21,7 @@ defmodule Commissionsbot.TelegramController do
 
   defp if_unique(update_id, cb) do
     unless ConCache.get(:commissions_cache, update_id) do
-      ConCache.put(:commissions_cache, update_id)
+      ConCache.put(:commissions_cache, update_id, true)
 
       unless Repo.get_by(TelegramUpdate, update_id: update_id) do
         %TelegramUpdate{}
@@ -43,13 +45,13 @@ defmodule Commissionsbot.TelegramController do
   defp handle_params(%{ "edited_channel_post" => channel_post }) do
     Telegram.Types.Message.from_map(channel_post)
   end
-  defp handle_params(%{ "inline_query" => inline_query }) do
+  defp handle_params(%{ "inline_query" => _inline_query }) do
     {:error, :unsupported}
   end
-  defp handle_params(%{ "chosen_inline_result" => inline_query }) do
+  defp handle_params(%{ "chosen_inline_result" => _inline_query }) do
     {:error, :unsupported}
   end
-  defp handle_params(%{ "callback_query" => inline_query }) do
+  defp handle_params(%{ "callback_query" => _inline_query }) do
     {:error, :unsupported}
   end
 end
