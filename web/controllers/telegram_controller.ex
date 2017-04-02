@@ -4,11 +4,30 @@ defmodule Commissionsbot.TelegramController do
   def index(conn, %{"update_id" => update_id}=params) do
     require Logger
 
-    case handle_params(params) do
-      {:ok, stuff} ->
-        Logger.debug stuff
-      {:error, error} ->
-        Logger.debug error
+    if_unique(update_id, fn ->
+      case handle_params(params) do
+        {:ok, stuff} ->
+          Logger.debug stuff
+        {:error, error} ->
+          Logger.debug error
+      end
+    end)
+
+    conn
+    |> send_resp(204, "")
+  end
+
+  defp if_unique(update_id, cb) do
+    unless ConCache.get(:commissions_cache, update_id) do
+      ConCache.put(:commissions_cache, update_id)
+
+      unless Repo.get_by(TelegramUpdate, update_id: update_id) do
+        %TelegramUpdate{}
+        |> TelegramUpdate.changeset(%{"update_id" => update_id})
+        |> Repo.insert
+
+        cb.()
+      end
     end
   end
 
